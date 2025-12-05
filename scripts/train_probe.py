@@ -121,6 +121,11 @@ def parse_args():
         action="store_true",
         help="Log loss to wandb every training step (not just every epoch)",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run to verify dataset integrity (check for train/val overlap) and exit",
+    )
     return parser.parse_args()
 
 
@@ -259,11 +264,41 @@ def train_single_layer(args, layer: int, use_wandb: bool):
     X, y, df = load_data(args.data, layer, args.mode)
     print(f"Dataset size: {len(X)} samples, {X.shape[1]} features")
     
-    # Train/val split
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=args.val_split, random_state=42, stratify=(y > 0.5).astype(int)
+    # Train/val split - split indices to track text overlap if needed
+    indices = np.arange(len(X))
+    X_train, X_val, y_train, y_val, idx_train, idx_val = train_test_split(
+        X, y, indices, test_size=args.val_split, random_state=42, stratify=(y > 0.5).astype(int)
     )
     print(f"Train: {len(X_train)}, Val: {len(X_val)}")
+    
+    # Dry run verification
+    if args.dry_run:
+        print(f"\n{'='*20} DRY RUN VERIFICATION {'='*20}")
+        print("Checking for data leakage (overlap between train and validation sets)...")
+        
+        train_texts = set(df.iloc[idx_train]["text"].tolist())
+        val_texts = set(df.iloc[idx_val]["text"].tolist())
+        
+        intersection = train_texts.intersection(val_texts)
+        overlap_count = len(intersection)
+        val_total = len(val_texts)
+        overlap_ratio = overlap_count / val_total if val_total > 0 else 0
+        
+        print(f"Unique texts in Train: {len(train_texts)}")
+        print(f"Unique texts in Val:   {len(val_texts)}")
+        print(f"Overlapping texts:     {overlap_count}")
+        print(f"Overlap ratio (of Val): {overlap_ratio:.2%}")
+        
+        if overlap_count > 0:
+            print("\nWARNING: DATA LEAKAGE DETECTED!")
+            print("Examples of overlapping texts:")
+            for i, text in enumerate(list(intersection)[:5]):
+                print(f"{i+1}. {text[:100]}...")
+        else:
+            print("\nSUCCESS: No overlap detected between training and validation sets.")
+            
+        print(f"{'='*60}\n")
+        return 0.0  # Return dummy accuracy
     
     # Create data loaders
     train_dataset = torch.utils.data.TensorDataset(

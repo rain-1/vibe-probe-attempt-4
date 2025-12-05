@@ -128,7 +128,7 @@ def generate_text_samples_batch(model, tokenizer, device: str, warm_tokens: int,
             output_high_temp,
             attention_mask=attention_mask,
             max_new_tokens=gen_tokens,
-            temperature=0.8,  # Greedy decoding
+            temperature=0.4,  # Greedy decoding
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
         )
