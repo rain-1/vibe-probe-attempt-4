@@ -67,6 +67,12 @@ def parse_args():
         default=1,
         help="Batch size for parallel generation (default: 1)",
     )
+    parser.add_argument(
+        "--extract-batch-size",
+        type=int,
+        default=32,
+        help="Batch size for hidden state extraction (default: 32)",
+    )
     return parser.parse_args()
 
 
@@ -122,8 +128,8 @@ def generate_text_samples_batch(model, tokenizer, device: str, warm_tokens: int,
             output_high_temp,
             attention_mask=attention_mask,
             max_new_tokens=gen_tokens,
-            temperature=None,  # Greedy decoding
-            do_sample=False,
+            temperature=0.8,  # Greedy decoding
+            do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
         )
     
@@ -280,15 +286,20 @@ def main():
         negative_texts.append(text_prefix)
         negative_metadata.append((text_prefix, tokens[end_pos].item()))
     
+    # Clear memory from generation
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
+    
     # Extract hidden states in batches
     print(f"Processing {len(positive_texts)} positive samples...")
     positive_hidden = extract_hidden_states_batch(
-        model, tokenizer, positive_texts, args.device, target_token_id, batch_size=args.batch_size
+        model, tokenizer, positive_texts, args.device, target_token_id, batch_size=args.extract_batch_size
     )
     
     print(f"Processing {len(negative_texts)} negative samples...")
     negative_hidden = extract_hidden_states_batch(
-        model, tokenizer, negative_texts, args.device, target_token_id, batch_size=args.batch_size
+        model, tokenizer, negative_texts, args.device, target_token_id, batch_size=args.extract_batch_size
     )
     
     # Build data rows

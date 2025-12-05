@@ -97,18 +97,17 @@ def load_model(model_name: str, device: str):
     return model, tokenizer
 
 
-def generate_text(model, tokenizer, device: str, warm_tokens: int, gen_tokens: int) -> tuple[str, list[int]]:
+def generate_text(model, tokenizer, device: str, gen_tokens: int) -> tuple[str, list[int]]:
     """
-    Generate text using warm-up + low-temp strategy.
+    Generate text at temp=1.0.
     Returns (text, token_ids).
     """
     input_ids = tokenizer.encode("The", return_tensors="pt").to(device)
     
-    # Generate warm_tokens at temp=1.0
     with torch.no_grad():
-        output_high_temp = model.generate(
+        output = model.generate(
             input_ids,
-            max_new_tokens=warm_tokens,
+            max_new_tokens=gen_tokens,
             temperature=1.0,
             do_sample=True,
             top_k=50,
@@ -116,20 +115,10 @@ def generate_text(model, tokenizer, device: str, warm_tokens: int, gen_tokens: i
             pad_token_id=tokenizer.eos_token_id,
         )
     
-    # Continue with gen_tokens at temp=0 (greedy)
-    with torch.no_grad():
-        output_full = model.generate(
-            output_high_temp,
-            max_new_tokens=gen_tokens,
-            temperature=None,
-            do_sample=False,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-    
-    # Truncate to final gen_tokens
-    final_tokens = output_full[0, -gen_tokens:]
-    token_ids = final_tokens.tolist()
-    text = tokenizer.decode(final_tokens, skip_special_tokens=True)
+    # Get generated tokens (excluding prompt)
+    generated_tokens = output[0, 1:]  # Skip the "The" prompt token
+    token_ids = generated_tokens.tolist()
+    text = tokenizer.decode(generated_tokens, skip_special_tokens=True)
     
     return text, token_ids
 
@@ -391,8 +380,14 @@ def main():
     for p in args.probes:
         path = Path(p)
         if path.is_dir():
-            # Find all .pt files in directory
-            found = sorted(path.glob("*.pt"))
+            # Find all .pt files in directory, sorted numerically by layer number
+            import re
+            found = list(path.glob("*.pt"))
+            # Sort by layer number extracted from filename (e.g., probe_layer_12.pt -> 12)
+            def extract_layer(f):
+                match = re.search(r'(\d+)', f.stem)
+                return int(match.group(1)) if match else 0
+            found = sorted(found, key=extract_layer)
             probe_paths.extend([str(f) for f in found])
             print(f"Found {len(found)} probes in {path}")
         else:
@@ -418,7 +413,7 @@ def main():
         random.seed(seed)
         torch.manual_seed(seed)
         print(f"Generating text (seed={seed})...")
-        text, _ = generate_text(model, tokenizer, args.device, args.warm_tokens, args.gen_tokens)
+        text, _ = generate_text(model, tokenizer, args.device, args.gen_tokens)
         print(f"Generated: {text[:100]}...")
     
     # Get hidden states for all layers
