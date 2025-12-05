@@ -8,6 +8,8 @@ probes to visualize activation patterns across layers.
 import argparse
 import html
 import json
+import random
+import time
 from pathlib import Path
 
 import torch
@@ -41,7 +43,7 @@ def parse_args():
         type=str,
         nargs="+",
         required=True,
-        help="Paths to probe checkpoint files (one per layer)",
+        help="Probe directory or list of checkpoint files (e.g., --probes checkpoints/ or --probes probe1.pt probe2.pt)",
     )
     parser.add_argument(
         "--model",
@@ -384,18 +386,38 @@ def generate_html(tokens: list[str], activations: dict[int, list[float]], output
 def main():
     args = parse_args()
     
+    # Expand probes argument - if single directory, find all .pt files
+    probe_paths = []
+    for p in args.probes:
+        path = Path(p)
+        if path.is_dir():
+            # Find all .pt files in directory
+            found = sorted(path.glob("*.pt"))
+            probe_paths.extend([str(f) for f in found])
+            print(f"Found {len(found)} probes in {path}")
+        else:
+            probe_paths.append(p)
+    
+    if not probe_paths:
+        print("ERROR: No probe files found")
+        return
+    
     # Load model
     model, tokenizer = load_model(args.model, args.device)
     
     # Load probes
-    probes = load_probes(args.probes, args.device)
+    probes = load_probes(probe_paths, args.device)
     
     # Get or generate text
     if args.text:
         text = args.text
         print(f"Using provided text: {text[:100]}...")
     else:
-        print("Generating text...")
+        # Seed with current time for fresh output each run
+        seed = int(time.time() * 1000) % (2**32)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        print(f"Generating text (seed={seed})...")
         text, _ = generate_text(model, tokenizer, args.device, args.warm_tokens, args.gen_tokens)
         print(f"Generated: {text[:100]}...")
     

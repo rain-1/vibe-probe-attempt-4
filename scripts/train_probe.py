@@ -41,8 +41,9 @@ def parse_args():
     parser.add_argument(
         "--layer",
         type=int,
+        nargs="+",
         required=True,
-        help="Which layer's hidden states to use (e.g., 12 for layer-12-hidden)",
+        help="Which layer(s) to train probes on (e.g., --layer 12 or --layer 0 6 12 18)",
     )
     parser.add_argument(
         "--mode",
@@ -112,8 +113,8 @@ def parse_args():
     parser.add_argument(
         "--output",
         type=str,
-        default="checkpoints/probe.pt",
-        help="Path to save trained probe (default: checkpoints/probe.pt)",
+        default="checkpoints/probe_layer_{layer}.pt",
+        help="Path pattern to save trained probes (default: checkpoints/probe_layer_{layer}.pt)",
     )
     parser.add_argument(
         "--log-every-step",
@@ -248,15 +249,15 @@ def validate(model, val_loader, criterion, device, mode):
     
     return avg_loss, accuracy, pos_acc, neg_acc
 
-
-def main():
-    args = parse_args()
+def train_single_layer(args, layer: int, use_wandb: bool):
+    """Train a probe for a single layer."""
+    print(f"\n{'='*60}")
+    print(f"Training probe for layer {layer}")
+    print(f"{'='*60}")
     
-    # Load data
-    print(f"Loading data from: {args.data}")
-    X, y, df = load_data(args.data, args.layer, args.mode)
-    print(f"Dataset size: {len(X)} samples, {X.shape[1]} features (layer {args.layer})")
-    print(f"Mode: {args.mode}")
+    # Load data for this layer
+    X, y, df = load_data(args.data, layer, args.mode)
+    print(f"Dataset size: {len(X)} samples, {X.shape[1]} features")
     
     # Train/val split
     X_train, X_val, y_train, y_val = train_test_split(
@@ -281,7 +282,6 @@ def main():
     
     # Create model
     model = LinearProbe(X.shape[1], use_gelu=args.use_gelu).to(args.device)
-    print(f"Model: {model}")
     
     # Loss function
     if args.mode == "classification":
@@ -292,15 +292,14 @@ def main():
     # Optimizer with weight decay (Ridge regularization)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     
-    # Initialize wandb
-    use_wandb = WANDB_AVAILABLE and not args.no_wandb
+    # Initialize wandb for this layer
     if use_wandb:
-        run_name = args.wandb_run or f"layer-{args.layer}-{args.mode}"
+        run_name = args.wandb_run or f"layer-{layer}-{args.mode}"
         wandb.init(
             project=args.wandb_project,
             name=run_name,
             config={
-                "layer": args.layer,
+                "layer": layer,
                 "mode": args.mode,
                 "epochs": args.epochs,
                 "batch_size": args.batch_size,
@@ -310,15 +309,16 @@ def main():
                 "train_size": len(X_train),
                 "val_size": len(X_val),
                 "input_dim": X.shape[1],
-            }
+            },
+            reinit=True,  # Allow multiple runs in same process
         )
     
     # Training loop
-    print("\nTraining...")
+    print("Training...")
     best_val_acc = 0.0
     global_step = 0
     
-    for epoch in tqdm(range(args.epochs), desc="Epochs"):
+    for epoch in tqdm(range(args.epochs), desc=f"Layer {layer}"):
         # Train
         train_loss, train_acc, train_pos_acc, train_neg_acc, global_step = train_epoch(
             model, train_loader, optimizer, criterion, args.device, args.mode,
@@ -356,24 +356,51 @@ def main():
                 f"Val Loss: {val_loss:.4f}, Acc: {val_acc:.3f} (P:{val_pos_acc:.3f}, N:{val_neg_acc:.3f})"
             )
     
-    print(f"\nBest validation accuracy: {best_val_acc:.4f}")
+    print(f"Best validation accuracy: {best_val_acc:.4f}")
     
-    # Save model
-    if args.output:
-        output_path = Path(args.output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
-            "model_state_dict": model.state_dict(),
-            "layer": args.layer,
-            "mode": args.mode,
-            "input_dim": X.shape[1],
-            "use_gelu": args.use_gelu,
-            "best_val_acc": best_val_acc,
-        }, output_path)
-        print(f"Model saved to: {output_path}")
+    # Save model with layer in filename
+    output_path = Path(args.output.format(layer=layer))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save({
+        "model_state_dict": model.state_dict(),
+        "layer": layer,
+        "mode": args.mode,
+        "input_dim": X.shape[1],
+        "use_gelu": args.use_gelu,
+        "best_val_acc": best_val_acc,
+    }, output_path)
+    print(f"Model saved to: {output_path}")
     
     if use_wandb:
         wandb.finish()
+    
+    return best_val_acc
+
+
+def main():
+    args = parse_args()
+    
+    print(f"Loading data from: {args.data}")
+    print(f"Mode: {args.mode}")
+    print(f"Layers to train: {args.layer}")
+    
+    use_wandb = WANDB_AVAILABLE and not args.no_wandb
+    
+    # Train probe for each layer
+    results = {}
+    for layer in args.layer:
+        best_acc = train_single_layer(args, layer, use_wandb)
+        results[layer] = best_acc
+    
+    # Summary
+    print(f"\n{'='*60}")
+    print("LAYER SWEEP SUMMARY")
+    print(f"{'='*60}")
+    for layer, acc in sorted(results.items()):
+        print(f"Layer {layer:2d}: {acc:.4f}")
+    
+    best_layer = max(results, key=results.get)
+    print(f"\nBest layer: {best_layer} ({results[best_layer]:.4f})")
 
 
 if __name__ == "__main__":
