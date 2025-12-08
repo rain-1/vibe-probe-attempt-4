@@ -40,10 +40,10 @@ def parse_args():
     )
     parser.add_argument(
         "--layer",
-        type=int,
+        type=str,
         nargs="+",
         required=True,
-        help="Which layer(s) to train probes on (e.g., --layer 12 or --layer 0 6 12 18)",
+        help="Which layer(s) to train probes on. Use integers (e.g., 12) or 'final' for post-layer-norm (e.g., --layer 12 or --layer 0 6 12 final)",
     )
     parser.add_argument(
         "--mode",
@@ -146,14 +146,25 @@ class LinearProbe(nn.Module):
         return x.squeeze(-1)
 
 
-def load_data(data_path: str, layer: int, mode: str):
-    """Load dataset and extract features/targets for the specified layer."""
+def load_data(data_path: str, layer: int | str, mode: str):
+    """Load dataset and extract features/targets for the specified layer.
+    
+    Args:
+        data_path: Path to parquet file
+        layer: Layer number (int) or 'final' for post-layer-norm hidden states
+        mode: 'classification' or 'regression'
+    """
     df = pd.read_parquet(data_path)
     
-    hidden_col = f"layer-{layer}-hidden"
+    # Handle special 'final' layer (post-layer-norm)
+    if layer == "final":
+        hidden_col = "layer-final-hidden"
+    else:
+        hidden_col = f"layer-{layer}-hidden"
+    
     if hidden_col not in df.columns:
         available = [c for c in df.columns if c.startswith("layer-") and c.endswith("-hidden")]
-        raise ValueError(f"Layer {layer} not found. Available: {available}")
+        raise ValueError(f"Layer '{layer}' not found. Available: {available}")
     
     # Extract features
     X = np.array(df[hidden_col].tolist(), dtype=np.float32)
@@ -254,8 +265,14 @@ def validate(model, val_loader, criterion, device, mode):
     
     return avg_loss, accuracy, pos_acc, neg_acc
 
-def train_single_layer(args, layer: int, use_wandb: bool):
-    """Train a probe for a single layer."""
+def train_single_layer(args, layer: int | str, use_wandb: bool):
+    """Train a probe for a single layer.
+    
+    Args:
+        args: Command line arguments
+        layer: Layer number (int) or 'final' for post-layer-norm
+        use_wandb: Whether to log to wandb
+    """
     print(f"\n{'='*60}")
     print(f"Training probe for layer {layer}")
     print(f"{'='*60}")
@@ -264,11 +281,43 @@ def train_single_layer(args, layer: int, use_wandb: bool):
     X, y, df = load_data(args.data, layer, args.mode)
     print(f"Dataset size: {len(X)} samples, {X.shape[1]} features")
     
-    # Train/val split - split indices to track text overlap if needed
-    indices = np.arange(len(X))
-    X_train, X_val, y_train, y_val, idx_train, idx_val = train_test_split(
-        X, y, indices, test_size=args.val_split, random_state=42, stratify=(y > 0.5).astype(int)
-    )
+    # Train/val split BY UNIQUE TEXTS to avoid leakage
+    # Group samples by text, then split the groups
+    if "text" in df.columns:
+        unique_texts = df["text"].unique()
+        
+        # Get label for each unique text (for stratification)
+        text_to_label = {}
+        for text in unique_texts:
+            # Use majority label if text appears with different labels (shouldn't happen)
+            labels = df[df["text"] == text]["label"].values
+            text_to_label[text] = int(labels.mean() > 0.5)
+        
+        text_labels = np.array([text_to_label[t] for t in unique_texts])
+        
+        # Split unique texts
+        train_texts, val_texts = train_test_split(
+            unique_texts, test_size=args.val_split, random_state=42, 
+            stratify=text_labels
+        )
+        train_texts_set = set(train_texts)
+        val_texts_set = set(val_texts)
+        
+        # Get indices for train and val
+        idx_train = df[df["text"].isin(train_texts_set)].index.tolist()
+        idx_val = df[df["text"].isin(val_texts_set)].index.tolist()
+        
+        X_train, y_train = X[idx_train], y[idx_train]
+        X_val, y_val = X[idx_val], y[idx_val]
+        
+        print(f"Unique texts: {len(unique_texts)} (Train: {len(train_texts)}, Val: {len(val_texts)})")
+    else:
+        # Fallback to sample-level split if no text column
+        indices = np.arange(len(X))
+        X_train, X_val, y_train, y_val, idx_train, idx_val = train_test_split(
+            X, y, indices, test_size=args.val_split, random_state=42, stratify=(y > 0.5).astype(int)
+        )
+    
     print(f"Train: {len(X_train)}, Val: {len(X_val)}")
     
     # Dry run verification
@@ -276,16 +325,21 @@ def train_single_layer(args, layer: int, use_wandb: bool):
         print(f"\n{'='*20} DRY RUN VERIFICATION {'='*20}")
         print("Checking for data leakage (overlap between train and validation sets)...")
         
-        train_texts = set(df.iloc[idx_train]["text"].tolist())
-        val_texts = set(df.iloc[idx_val]["text"].tolist())
+        if "text" in df.columns:
+            train_texts_check = set(df.iloc[idx_train]["text"].tolist())
+            val_texts_check = set(df.iloc[idx_val]["text"].tolist())
+            
+            intersection = train_texts_check.intersection(val_texts_check)
+            overlap_count = len(intersection)
+            val_total = len(val_texts_check)
+        else:
+            overlap_count = 0
+            val_total = len(X_val)
         
-        intersection = train_texts.intersection(val_texts)
-        overlap_count = len(intersection)
-        val_total = len(val_texts)
         overlap_ratio = overlap_count / val_total if val_total > 0 else 0
         
-        print(f"Unique texts in Train: {len(train_texts)}")
-        print(f"Unique texts in Val:   {len(val_texts)}")
+        print(f"Unique texts in Train: {len(train_texts_check) if 'text' in df.columns else 'N/A'}")
+        print(f"Unique texts in Val:   {len(val_texts_check) if 'text' in df.columns else 'N/A'}")
         print(f"Overlapping texts:     {overlap_count}")
         print(f"Overlap ratio (of Val): {overlap_ratio:.2%}")
         
@@ -415,6 +469,18 @@ def train_single_layer(args, layer: int, use_wandb: bool):
 def main():
     args = parse_args()
     
+    # Parse layer arguments - convert to int where possible, keep 'final' as string
+    parsed_layers = []
+    for layer in args.layer:
+        if layer.lower() == "final":
+            parsed_layers.append("final")
+        else:
+            try:
+                parsed_layers.append(int(layer))
+            except ValueError:
+                raise ValueError(f"Invalid layer '{layer}'. Use integers or 'final'.")
+    args.layer = parsed_layers
+    
     print(f"Loading data from: {args.data}")
     print(f"Mode: {args.mode}")
     print(f"Layers to train: {args.layer}")
@@ -431,8 +497,8 @@ def main():
     print(f"\n{'='*60}")
     print("LAYER SWEEP SUMMARY")
     print(f"{'='*60}")
-    for layer, acc in sorted(results.items()):
-        print(f"Layer {layer:2d}: {acc:.4f}")
+    for layer, acc in sorted(results.items(), key=lambda x: (isinstance(x[0], str), x[0])):
+        print(f"Layer {layer}: {acc:.4f}")
     
     best_layer = max(results, key=results.get)
     print(f"\nBest layer: {best_layer} ({results[best_layer]:.4f})")

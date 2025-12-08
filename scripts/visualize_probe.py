@@ -123,12 +123,12 @@ def generate_text(model, tokenizer, device: str, gen_tokens: int) -> tuple[str, 
     return text, token_ids
 
 
-def load_probes(probe_paths: list[str], device: str) -> dict[int, nn.Module]:
+def load_probes(probe_paths: list[str], device: str) -> dict[int | str, nn.Module]:
     """Load probe checkpoints and return dict mapping layer -> probe."""
     probes = {}
     for path in probe_paths:
         checkpoint = torch.load(path, map_location=device)
-        layer = checkpoint["layer"]
+        layer = checkpoint["layer"]  # Can be int or 'final'
         input_dim = checkpoint["input_dim"]
         use_gelu = checkpoint.get("use_gelu", False)
         
@@ -147,6 +147,7 @@ def get_all_hidden_states(model, tokenizer, text: str, device: str) -> dict:
     """
     Run model on text and extract hidden states from all layers for all tokens.
     Returns dict with layer -> (seq_len, hidden_dim) tensor.
+    Also includes 'final' key for post-layer-norm hidden states.
     """
     inputs = tokenizer(text, return_tensors="pt").to(device)
     
@@ -163,10 +164,23 @@ def get_all_hidden_states(model, tokenizer, text: str, device: str) -> dict:
     for layer_idx, layer_hidden in enumerate(hidden_states):
         result[layer_idx] = layer_hidden[0]  # Remove batch dim -> (seq, hidden_dim)
     
+    # Add post-final-layer-norm hidden states
+    final_norm = None
+    if hasattr(model, 'model') and hasattr(model.model, 'norm'):
+        final_norm = model.model.norm  # Gemma, Llama style
+    elif hasattr(model, 'transformer') and hasattr(model.transformer, 'ln_f'):
+        final_norm = model.transformer.ln_f  # GPT-2 style
+    
+    if final_norm is not None:
+        last_hidden = hidden_states[-1][0]  # (seq, hidden_dim)
+        with torch.no_grad():
+            normed_hidden = final_norm(last_hidden)
+        result["final"] = normed_hidden
+    
     return result, inputs.input_ids[0].tolist()
 
 
-def compute_probe_activations(probes: dict[int, nn.Module], hidden_states: dict) -> dict[int, list[float]]:
+def compute_probe_activations(probes: dict[int | str, nn.Module], hidden_states: dict) -> dict[int | str, list[float]]:
     """
     Apply each probe to its corresponding layer's hidden states.
     Returns dict mapping layer -> list of activation values per token.
@@ -189,15 +203,24 @@ def compute_probe_activations(probes: dict[int, nn.Module], hidden_states: dict)
     return activations
 
 
-def generate_html(tokens: list[str], activations: dict[int, list[float]], output_path: str):
+def generate_html(tokens: list[str], activations: dict[int | str, list[float]], output_path: str):
     """
     Generate HTML visualization with layer slider.
     """
-    layers = sorted(activations.keys())
+    # Sort layers: integers first (numerically), then strings
+    int_layers = sorted([l for l in activations.keys() if isinstance(l, int)])
+    str_layers = sorted([l for l in activations.keys() if isinstance(l, str)])
+    layers = int_layers + str_layers
     
-    # Convert activations to JSON for JavaScript
-    activations_json = json.dumps(activations)
+    # Convert activations to JSON for JavaScript (ensure keys are strings)
+    activations_str_keys = {str(k): v for k, v in activations.items()}
+    activations_json = json.dumps(activations_str_keys)
     tokens_json = json.dumps([html.escape(t) for t in tokens])
+    layers_json = json.dumps([str(l) for l in layers])
+    
+    # Default to middle layer for initial view
+    default_idx = len(layers) // 2
+    default_layer = str(layers[default_idx])
     
     html_content = f'''<!DOCTYPE html>
 <html lang="en">
@@ -295,8 +318,8 @@ def generate_html(tokens: list[str], activations: dict[int, list[float]], output
     <div class="controls">
         <div class="slider-container">
             <label for="layer-slider">Layer:</label>
-            <input type="range" id="layer-slider" min="{min(layers)}" max="{max(layers)}" value="{layers[len(layers)//2]}" step="1">
-            <span id="layer-value">Layer {layers[len(layers)//2]}</span>
+            <input type="range" id="layer-slider" min="0" max="{len(layers) - 1}" value="{default_idx}" step="1">
+            <span id="layer-value">Layer {default_layer}</span>
         </div>
     </div>
     
@@ -322,7 +345,7 @@ def generate_html(tokens: list[str], activations: dict[int, list[float]], output
     <script>
         const tokens = {tokens_json};
         const activations = {activations_json};
-        const layers = {json.dumps(layers)};
+        const layers = {layers_json};
         
         function getColor(value) {{
             // Green -> Yellow -> Red gradient
@@ -357,11 +380,13 @@ def generate_html(tokens: list[str], activations: dict[int, list[float]], output
         }}
         
         document.getElementById('layer-slider').addEventListener('input', function() {{
-            updateVisualization(parseInt(this.value));
+            const layerIdx = parseInt(this.value);
+            const layer = layers[layerIdx];
+            updateVisualization(layer);
         }});
         
         // Initial render
-        updateVisualization({layers[len(layers)//2]});
+        updateVisualization(layers[{default_idx}]);
     </script>
 </body>
 </html>'''

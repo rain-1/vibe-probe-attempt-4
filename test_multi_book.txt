@@ -1,0 +1,28 @@
+[Sherlock Holmes - A Study in Scarlet]
+"Data! Data! Data!" he cried impatiently. "I can't make bricks without clay."
+"My dear Watson," said he, "I cannot agree with those who rank modesty among the virtues. To the logician all things should be seen exactly as they are, and to underestimate one's self is as much a departure from truth as to exaggerate it."
+"I have no data yet. It is a capital mistake to theorize before one has data. Insensibly one begins to twist facts to suit theories, instead of theories to suit facts."
+"There's the scarlet thread of murder running through the colourless skein of life, and our duty is to unravel it, and isolate it, and expose every inch of it."
+"What you do in this world is a matter of no consequence," returned my companion, bitterly. "The question is, what can you make people believe that you have done."
+
+[Pride and Prejudice]
+"It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife."
+"However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters."
+"My dear Mr. Bennet," said his lady to him one day, "have you heard that Netherfield Park is let at last?"
+Mr. Bennet replied that he had not.
+"But it is," returned she; "for Mrs. Long has just been here, and she told me all about it."
+Mr. Bennet made no answer.
+"Do you not want to know who has taken it?" cried his wife impatiently.
+"You want to tell me, and I have no objection to hearing it."
+This was invitation enough.
+"Why, my dear, you must know, Mrs. Long says that Netherfield is taken by a young man of large fortune from the north of England; that he came down on Monday in a chaise and four to see the place, and was so much delighted with it, that he agreed with Mr. Morris immediately; that he is to take possession before Michaelmas, and some of his servants are to be in the house by the end of next week."
+"What is his name?"
+"Bingley."
+
+[Dracula]
+"Listen to them, the children of the night. What music they make!"
+He saw my eyes' expression and said, "Ah, sir, you dwellers in the city cannot enter into the feelings of the hunter."
+Then he added, "I am sure you will encounter no one, provided you do not go out of the castle."
+"I am all in a sea of wonders. I doubt; I fear; I think strange things, which I dare not confess to my own soul. God keep me, if only for the sake of those dear to me!"
+"We are in Transylvania, and Transylvania is not England. Our ways are not your ways, and there shall be to you many strange things. Nay, from what you have told me of your experiences already, you know something of what strange things there may be."
+"Do you not think that there are things which you cannot understand, and yet which are; that some people see things that others cannot? But there are things old and new which must not be contemplate by men's eyes, because they know - or think they know - some things which other men have told them. Ah, it is the fault of our science that it wants to explain all; and if it explain not, then it says there is nothing to explain."

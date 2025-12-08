@@ -136,8 +136,20 @@ def extract_hidden_states_batch(model, tokenizer, texts: list[str], device: str,
     """
     Extract hidden states from all layers for a batch of texts.
     Returns a list of dicts with layer-N-hidden keys containing the final token's hidden state.
+    Also extracts post-final-layer-norm hidden states as 'layer-final-hidden'.
     """
     all_results = []
+    
+    # Get the final layer norm (works for Gemma, Llama, etc.)
+    # For most HF causal LM models: model.model.norm or model.transformer.ln_f
+    final_norm = None
+    if hasattr(model, 'model') and hasattr(model.model, 'norm'):
+        final_norm = model.model.norm  # Gemma, Llama style
+    elif hasattr(model, 'transformer') and hasattr(model.transformer, 'ln_f'):
+        final_norm = model.transformer.ln_f  # GPT-2 style
+    
+    if final_norm is None:
+        print("Warning: Could not find final layer norm. 'layer-final-hidden' will not be extracted.")
     
     # Process in batches
     for batch_start in range(0, len(texts), batch_size):
@@ -168,6 +180,13 @@ def extract_hidden_states_batch(model, tokenizer, texts: list[str], device: str,
             for layer_idx, layer_hidden in enumerate(hidden_states):
                 last_hidden = layer_hidden[i, last_pos, :].cpu().float().numpy().tolist()
                 result[f"layer-{layer_idx}-hidden"] = last_hidden
+            
+            # Extract post-final-layer-norm hidden state
+            # This is the representation just before lm_head (unembedding)
+            if final_norm is not None:
+                last_layer_hidden = hidden_states[-1][i, last_pos, :].unsqueeze(0)
+                normed_hidden = final_norm(last_layer_hidden)
+                result["layer-final-hidden"] = normed_hidden.squeeze(0).detach().cpu().float().numpy().tolist()
             
             all_results.append(result)
     
