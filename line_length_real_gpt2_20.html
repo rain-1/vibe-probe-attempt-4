@@ -98,21 +98,21 @@
 
     <div class="stats">
         <div class="model-info">Model: gpt2</div>
-        <div class="threshold-info">Threshold: 50 characters</div>
-        <div class="threshold-info">Task: Predict if line length &le; 50 (short) or &gt; 50 (long)</div>
+        <div class="threshold-info">Threshold: 20 characters</div>
+        <div class="threshold-info">Task: Predict if line length &le; 20 (short) or &gt; 20 (long)</div>
         <div style="margin-top: 15px;">
-            Validation Accuracy: <span class="accuracy">92.9%</span>
+            Validation Accuracy: <span class="accuracy">89.3%</span>
         </div>
     </div>
 
     <div class="legend">
         <div class="legend-item">
             <div class="legend-color" style="background: #4ec9b0;"></div>
-            <span>Short (&le; 50 chars)</span>
+            <span>Short (&le; 20 chars)</span>
         </div>
         <div class="legend-item">
             <div class="legend-color" style="background: #ce9178;"></div>
-            <span>Long (&gt; 50 chars)</span>
+            <span>Long (&gt; 20 chars)</span>
         </div>
         <div class="legend-item">
             <div class="legend-color" style="background: #f14c4c;"></div>
@@ -123,44 +123,43 @@
     <div class="ruler">
         <div>1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890</div>
         <div>         │         │         │         │         │         │         │         │         │         │</div>
-        <div>                                                 <span style="color: #f14c4c;">↑ threshold</span></div>
+        <div>                   <span style="color: #f14c4c;">↑ threshold</span></div>
     </div>
 
     <div class="analysis">
         <h3>Error Analysis</h3>
         <p>Errors by line length bucket:</p>
         <ul>
-            <li>30-39 chars: 1 errors</li>
-            <li>40-49 chars: 1 errors</li>
+            <li>10-19 chars: 3 errors</li>
         </ul>
     </div>
 
     <h2>Individual Predictions</h2>
 
     <div class="line-container correct">
-        <div class="line-text short">1. Introduction</div>
+        <div class="line-text long">    # Initialize array to store Fibonacci numbers</div>
         <div class="meta">
-            Length: <span class="actual">15</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (100%) |
+            Length: <span class="actual">49</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (99%) |
             ✓
         </div>
     </div>
 
-    <div class="line-container correct">
-        <div class="line-text short">Python Version:      3.11.4</div>
+    <div class="line-container wrong">
+        <div class="line-text short">        return n</div>
         <div class="meta">
-            Length: <span class="actual">27</span> |
+            Length: <span class="actual">16</span> |
             Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (100%) |
-            ✓
+            Predicted: <span class="pred">long</span> (65%) |
+            ✗
         </div>
     </div>
 
     <div class="line-container correct">
-        <div class="line-text long">This document contains technical specifications for the computing system.</div>
+        <div class="line-text long">    def load_data(self, filepath: str) -&gt; None:</div>
         <div class="meta">
-            Length: <span class="actual">73</span> |
+            Length: <span class="actual">47</span> |
             Actual: <span class="actual">long</span> |
             Predicted: <span class="pred">long</span> (100%) |
             ✓
@@ -168,27 +167,87 @@
     </div>
 
     <div class="line-container correct">
-        <div class="line-text short">         - Length (2 bytes): Total message length</div>
+        <div class="line-text long">================================================================================</div>
         <div class="meta">
-            Length: <span class="actual">49</span> |
+            Length: <span class="actual">80</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text short">    return fib[n]</div>
+        <div class="meta">
+            Length: <span class="actual">17</span> |
             Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (89%) |
+            Predicted: <span class="pred">long</span> (71%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">CUDA Version:        12.1</div>
+        <div class="meta">
+            Length: <span class="actual">25</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
             ✓
         </div>
     </div>
 
     <div class="line-container correct">
-        <div class="line-text short">    output = processor.process()</div>
+        <div class="line-text long">Storage:        1024 GB NVMe SSD</div>
         <div class="meta">
             Length: <span class="actual">32</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (99%) |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
             ✓
         </div>
     </div>
 
     <div class="line-container correct">
-        <div class="line-text long">================================================================================</div>
+        <div class="line-text long">Graphics:       NVIDIA GeForce RTX 2080</div>
+        <div class="meta">
+            Length: <span class="actual">39</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">   The error code indicates the type of failure that occurred.</div>
+        <div class="meta">
+            Length: <span class="actual">62</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">      A connection is established through a three-way handshake:</div>
+        <div class="meta">
+            Length: <span class="actual">64</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text short">3. Error Handling</div>
+        <div class="meta">
+            Length: <span class="actual">17</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">long</span> (99%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">--------------------------------------------------------------------------------</div>
         <div class="meta">
             Length: <span class="actual">80</span> |
             Actual: <span class="actual">long</span> |
@@ -202,17 +261,77 @@
         <div class="meta">
             Length: <span class="actual">68</span> |
             Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (99%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">   2.1. Message Format</div>
+        <div class="meta">
+            Length: <span class="actual">22</span> |
+            Actual: <span class="actual">long</span> |
             Predicted: <span class="pred">long</span> (100%) |
             ✓
         </div>
     </div>
 
     <div class="line-container correct">
-        <div class="line-text short">        self.data = None</div>
+        <div class="line-text long">        self.config = config</div>
         <div class="meta">
-            Length: <span class="actual">24</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (96%) |
+            Length: <span class="actual">28</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (98%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">         1. Client sends SYN</div>
+        <div class="meta">
+            Length: <span class="actual">28</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">        return result</div>
+        <div class="meta">
+            Length: <span class="actual">21</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (72%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">        fib[i] = fib[i - 1] + fib[i - 2]</div>
+        <div class="meta">
+            Length: <span class="actual">40</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (61%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">    output = processor.process()</div>
+        <div class="meta">
+            Length: <span class="actual">32</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">Processor:      Intel Core i7-9700K @ 3.60GHz</div>
+        <div class="meta">
+            Length: <span class="actual">45</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
             ✓
         </div>
     </div>
@@ -228,27 +347,7 @@
     </div>
 
     <div class="line-container correct">
-        <div class="line-text long">================================================================================</div>
-        <div class="meta">
-            Length: <span class="actual">80</span> |
-            Actual: <span class="actual">long</span> |
-            Predicted: <span class="pred">long</span> (99%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">         1. Client sends SYN</div>
-        <div class="meta">
-            Length: <span class="actual">28</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (99%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text long">All lines in this document are formatted to exactly 80 characters wide.</div>
+        <div class="line-text long">    """Calculate the nth Fibonacci number using dynamic programming."""</div>
         <div class="meta">
             Length: <span class="actual">71</span> |
             Actual: <span class="actual">long</span> |
@@ -257,50 +356,10 @@
         </div>
     </div>
 
-    <div class="line-container wrong">
-        <div class="line-text short">   simple, efficient, and reliable.</div>
-        <div class="meta">
-            Length: <span class="actual">35</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">long</span> (63%) |
-            ✗
-        </div>
-    </div>
-
     <div class="line-container correct">
-        <div class="line-text short">    def __init__(self, config: dict):</div>
+        <div class="line-text long">    def __init__(self, config: dict):</div>
         <div class="meta">
             Length: <span class="actual">37</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (100%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">        return n</div>
-        <div class="meta">
-            Length: <span class="actual">16</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (99%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">    fib = [0] * (n + 1)</div>
-        <div class="meta">
-            Length: <span class="actual">23</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (100%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text long">This is standard practice for terminal displays and text file formatting.</div>
-        <div class="meta">
-            Length: <span class="actual">73</span> |
             Actual: <span class="actual">long</span> |
             Predicted: <span class="pred">long</span> (100%) |
             ✓
@@ -308,111 +367,51 @@
     </div>
 
     <div class="line-container correct">
-        <div class="line-text short">    # Initialize array to store Fibonacci numbers</div>
-        <div class="meta">
-            Length: <span class="actual">49</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (88%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">    if n &lt;= 1:</div>
-        <div class="meta">
-            Length: <span class="actual">14</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (100%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">        return result</div>
-        <div class="meta">
-            Length: <span class="actual">21</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (98%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text long">        """Process the loaded data according to configuration."""</div>
-        <div class="meta">
-            Length: <span class="actual">65</span> |
-            Actual: <span class="actual">long</span> |
-            Predicted: <span class="pred">long</span> (99%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text long">--------------------------------------------------------------------------------</div>
-        <div class="meta">
-            Length: <span class="actual">80</span> |
-            Actual: <span class="actual">long</span> |
-            Predicted: <span class="pred">long</span> (99%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">Storage:        1024 GB NVMe SSD</div>
-        <div class="meta">
-            Length: <span class="actual">32</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (100%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">        self.processed = True</div>
-        <div class="meta">
-            Length: <span class="actual">29</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (99%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">def calculate_fibonacci(n: int) -&gt; int:</div>
-        <div class="meta">
-            Length: <span class="actual">39</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (100%) |
-            ✓
-        </div>
-    </div>
-
-    <div class="line-container wrong">
-        <div class="line-text short">            raise ValueError("No data loaded")</div>
+        <div class="line-text long">            raise ValueError("No data loaded")</div>
         <div class="meta">
             Length: <span class="actual">46</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">long</span> (76%) |
-            ✗
-        </div>
-    </div>
-
-    <div class="line-container correct">
-        <div class="line-text short">         2. Server responds with SYN-ACK</div>
-        <div class="meta">
-            Length: <span class="actual">40</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (92%) |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (99%) |
             ✓
         </div>
     </div>
 
     <div class="line-container correct">
-        <div class="line-text short">        fib[i] = fib[i - 1] + fib[i - 2]</div>
+        <div class="line-text long">   document are to be interpreted as described in RFC 2119.</div>
         <div class="meta">
-            Length: <span class="actual">40</span> |
-            Actual: <span class="actual">short</span> |
-            Predicted: <span class="pred">short</span> (97%) |
+            Length: <span class="actual">59</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">        self.processed = True</div>
+        <div class="meta">
+            Length: <span class="actual">29</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (99%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">The system has been configured for optimal performance in development tasks.</div>
+        <div class="meta">
+            Length: <span class="actual">76</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text long">   All errors MUST be reported using the standard error response format.</div>
+        <div class="meta">
+            Length: <span class="actual">72</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">long</span> (100%) |
             ✓
         </div>
     </div>
