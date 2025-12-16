@@ -1,0 +1,132 @@
+======================================================================
+MODEL: GPT-2
+======================================================================
+
+--- BANK (['financial_institution', 'river_edge']) ---
+  Basic (target pos):     0.969 (+/- 0.054)
+  Attention flow:         1.000 (+/- 0.000)
+  Attention patterns:     0.938 (+/- 0.062)
+  End of sentence:        0.969 (+/- 0.054)
+
+--- BAT (['animal', 'sports_equipment']) ---
+  Basic (target pos):     0.866 (+/- 0.009)
+  Attention flow:         0.795 (+/- 0.080)
+  Attention patterns:     0.862 (+/- 0.101)
+  End of sentence:        0.969 (+/- 0.054)
+
+--- CRANE (['bird', 'machine']) ---
+  Basic (target pos):     0.638 (+/- 0.088)
+  Attention flow:         0.701 (+/- 0.133)
+  Attention patterns:     0.866 (+/- 0.089)
+  End of sentence:        0.933 (+/- 0.067)
+
+--- CELL (['biology', 'prison', 'phone']) ---
+  Basic (target pos):     0.778 (+/- 0.099)
+  Attention flow:         0.844 (+/- 0.054)
+  Attention patterns:     0.867 (+/- 0.083)
+  End of sentence:        0.867 (+/- 0.083)
+
+--- SPRING (['season', 'coil', 'water_source']) ---
+  Basic (target pos):     0.733 (+/- 0.054)
+  Attention flow:         0.756 (+/- 0.083)
+  Attention patterns:     0.644 (+/- 0.191)
+  End of sentence:        0.956 (+/- 0.054)
+
+--- MATCH (['fire_starter', 'competition', 'to_pair']) ---
+  Basic (target pos):     0.911 (+/- 0.044)
+  Attention flow:         0.933 (+/- 0.054)
+  Attention patterns:     0.911 (+/- 0.083)
+  End of sentence:        0.911 (+/- 0.044)
+
+======================================================================
+MODEL: BERT
+======================================================================
+
+--- BANK (['financial_institution', 'river_edge']) ---
+  Basic (target pos):     1.000 (+/- 0.000)
+  [CLS] token:            0.969 (+/- 0.054)
+
+--- BAT (['animal', 'sports_equipment']) ---
+  Basic (target pos):     1.000 (+/- 0.000)
+  [CLS] token:            0.933 (+/- 0.067)
+
+--- CRANE (['bird', 'machine']) ---
+  Basic (target pos):     1.000 (+/- 0.000)
+  [CLS] token:            0.969 (+/- 0.054)
+
+--- CELL (['biology', 'prison', 'phone']) ---
+  Basic (target pos):     0.978 (+/- 0.044)
+  [CLS] token:            0.956 (+/- 0.054)
+
+--- SPRING (['season', 'coil', 'water_source']) ---
+  Basic (target pos):     0.978 (+/- 0.044)
+  [CLS] token:            0.889 (+/- 0.141)
+
+--- MATCH (['fire_starter', 'competition', 'to_pair']) ---
+  Basic (target pos):     1.000 (+/- 0.000)
+  [CLS] token:            0.933 (+/- 0.054)
+
+======================================================================
+SUMMARY TABLE
+======================================================================
+
+Word       | GPT2-Basic   | GPT2-AttnFlow  | GPT2-AttnPat  | GPT2-EOS   | BERT      
+-------------------------------------------------------------------------------------
+bank       | 0.969        | 1.000          | 0.938         | 0.969      | 1.000     
+bat        | 0.866        | 0.795          | 0.862         | 0.969      | 1.000     
+crane      | 0.638        | 0.701          | 0.866         | 0.933      | 1.000     
+cell       | 0.778        | 0.844          | 0.867         | 0.867      | 0.978     
+spring     | 0.733        | 0.756          | 0.644         | 0.956      | 0.978     
+match      | 0.911        | 0.933          | 0.911         | 0.911      | 1.000
+It's working now. The fix was adding attn_implementation='eager' when loading the model, which is needed because modern transformers uses Flash Attention or SDPA by default, which don't return attention weights. Here's a summary of the results:
+Word	GPT2-Basic	GPT2-AttnFlow	GPT2-AttnPat	GPT2-EOS	BERT
+bank	0.969	1.000	0.938	0.969	1.000
+bat	0.866	0.795	0.862	0.969	1.000
+crane	0.638	0.701	0.866	0.933	1.000
+cell	0.778	0.844	0.867	0.867	0.978
+spring	0.733	0.756	0.644	0.956	0.978
+match	0.911	0.933	0.911	0.911	1.000
+Interesting findings:
+Attention flow helps for some words (bank, cell, match) but not others
+End-of-sentence embedding (GPT2-EOS) is surprisingly effective - it captures the full context
+BERT still wins overall because bidirectional attention captures context on both sides
+The attention flow approach works best for "bank" (100%), likely because disambiguation context comes after the word
+
+
+
+Done! I've generated 4 HTML files for comparison. The results are interesting:
+Method	Accuracy
+RoBERTa (bidirectional)	100.0%
+GPT-2 Basic (target position)	66.7%
+GPT-2 Attention Flow	50.0%
+GPT-2 End of Sentence	50.0%
+The files are:
+story_gpt2_basic.html - GPT-2 embedding at target word position
+story_gpt2_attention_flow.html - GPT-2 attention-weighted flow from target to end
+story_gpt2_end_of_sentence.html - GPT-2 final token embedding
+story_roberta.html - RoBERTa bidirectional (target position)
+Key observations:
+RoBERTa wins decisively at 100% - bidirectional context is essential for WSD
+The attention flow approach didn't help as much as expected on this test set
+Wrong predictions are marked with a red wavy underline in the HTML
+You can open these files in your browser to see the color-coded words and compare which ones each method gets wrong!
+
+
+
+Yeah, the results are disappointing for GPT-2. Looking at the numbers:
+Method	Accuracy
+RoBERTa (bidirectional)	100%
+GPT-2 Basic	67%
+GPT-2 Attention Flow	50%
+GPT-2 End of Sentence	50%
+The attention flow idea was interesting in theory - capture what information about the ambiguous word "flowed" to the end of the sentence after seeing disambiguating context. But in practice:
+The fundamental problem remains: In GPT-2, each token's representation is built incrementally. By the time the model reaches the end of the sentence, the information has been transformed through many layers and mixed with everything else. The attention weights tell us "how much the model looked at the target word" but not "what sense it concluded."
+End-of-sentence doesn't help either: The final token embedding contains the whole sentence context, but it's optimized for next-token prediction, not for representing word senses.
+The contrastive probe can only work with what's there: If the underlying embeddings don't separate the senses, no amount of probe training will fix it.
+The bidirectional models (BERT/RoBERTa) fundamentally encode each word with full context from both directions in a single forward pass - that's why they dominate WSD tasks. If you want to keep exploring GPT-2, some other ideas:
+Try extracting from a token position after the disambiguating context (e.g., end of the noun phrase containing the word)
+Use a much larger GPT model that might have richer representations
+Fine-tune GPT-2 on a WSD objective rather than just probing
+But honestly, for WSD specifically, bidirectional models are just the right tool for the job.
+
+
