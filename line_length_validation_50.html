@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Line Length Probe Validation</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 { color: #569cd6; text-align: center; }
+        .stats {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 8px;
+        }
+        .accuracy {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #f14c4c;
+        }
+        .threshold-info {
+            color: #9cdcfe;
+            margin: 10px 0;
+        }
+        .line-container {
+            margin: 8px 0;
+            padding: 10px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .correct { border-color: #4ec9b0; }
+        .wrong { border-color: #f14c4c; background: #3d2d2d; }
+        .line-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .short { color: #4ec9b0; }
+        .long { color: #ce9178; }
+        .meta {
+            font-size: 0.85em;
+            color: #808080;
+            margin-top: 5px;
+        }
+        .pred { color: #dcdcaa; }
+        .actual { color: #9cdcfe; }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .ruler {
+            margin: 20px 0;
+            padding: 10px;
+            background: #252526;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .ruler-text {
+            color: #569cd6;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Line Length Probe Validation</h1>
+
+    <div class="stats">
+        <div class="threshold-info">Threshold: 50 characters</div>
+        <div class="threshold-info">Task: Predict if line length ≤ 50 (short) or > 50 (long)</div>
+        <div style="margin-top: 15px;">
+            Validation Accuracy: <span class="accuracy">40.0%</span>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #4ec9b0;"></div>
+            <span>Short (≤ 50 chars)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ce9178;"></div>
+            <span>Long (> 50 chars)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f14c4c;"></div>
+            <span>Wrong prediction</span>
+        </div>
+    </div>
+
+    <div class="ruler">
+        <div class="ruler-text">
+            12345678901234567890123456789012345678901234567890123456789012345678901234567890
+        </div>
+        <div class="ruler-text">
+                     │         │         │         │         │         │         │         │
+            <span style="color: #f14c4c;"> ← 50 char threshold</span>
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">The quick brown fox jumps over the lazy dog near the old barn.</div>
+        <div class="meta">
+            Length: <span class="actual">62</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (93%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">A short line.</div>
+        <div class="meta">
+            Length: <span class="actual">13</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text short">This is a medium length line with some words.</div>
+        <div class="meta">
+            Length: <span class="actual">45</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">long</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Programming is the art of telling a computer what to do.</div>
+        <div class="meta">
+            Length: <span class="actual">56</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">Hi there!</div>
+        <div class="meta">
+            Length: <span class="actual">9</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">The rain in Spain falls mainly on the plain during the autumn months.</div>
+        <div class="meta">
+            Length: <span class="actual">69</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (89%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Code review is essential for maintaining software quality in teams.</div>
+        <div class="meta">
+            Length: <span class="actual">67</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">Yes.</div>
+        <div class="meta">
+            Length: <span class="actual">4</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Functions should do one thing and do it well according to best practices.</div>
+        <div class="meta">
+            Length: <span class="actual">73</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (97%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">A tiny one.</div>
+        <div class="meta">
+            Length: <span class="actual">11</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">The model processes each token sequentially from left to right always.</div>
+        <div class="meta">
+            Length: <span class="actual">70</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Testing helps catch bugs before they reach production environments today.</div>
+        <div class="meta">
+            Length: <span class="actual">73</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">No way!</div>
+        <div class="meta">
+            Length: <span class="actual">7</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Machine learning models can learn complex patterns from large datasets.</div>
+        <div class="meta">
+            Length: <span class="actual">71</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">Short text here.</div>
+        <div class="meta">
+            Length: <span class="actual">16</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Natural language processing enables computers to understand human speech.</div>
+        <div class="meta">
+            Length: <span class="actual">73</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">The transformer architecture revolutionized deep learning for sequences.</div>
+        <div class="meta">
+            Length: <span class="actual">72</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">OK.</div>
+        <div class="meta">
+            Length: <span class="actual">3</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Attention mechanisms allow models to focus on relevant parts of input.</div>
+        <div class="meta">
+            Length: <span class="actual">70</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">This line is exactly fifty characters long here!</div>
+        <div class="meta">
+            Length: <span class="actual">48</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">A brief note.</div>
+        <div class="meta">
+            Length: <span class="actual">13</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">The embedding space captures semantic relationships between words nicely.</div>
+        <div class="meta">
+            Length: <span class="actual">73</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Probe training uses contrastive learning to find good directions.</div>
+        <div class="meta">
+            Length: <span class="actual">65</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+    <div class="line-container correct">
+        <div class="line-text short">Go!</div>
+        <div class="meta">
+            Length: <span class="actual">3</span> |
+            Actual: <span class="actual">short</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✓
+        </div>
+    </div>
+
+    <div class="line-container wrong">
+        <div class="line-text long">Validation on held-out data reveals whether probes truly generalize well.</div>
+        <div class="meta">
+            Length: <span class="actual">73</span> |
+            Actual: <span class="actual">long</span> |
+            Predicted: <span class="pred">short</span> (100%) |
+            ✗
+        </div>
+    </div>
+
+</body>
+</html>
