@@ -479,14 +479,17 @@ def print_predictions_summary(occurrences: List[WordOccurrence]):
 
 def main():
     from transformers import AutoModel, AutoTokenizer
+    import sys
 
     print("="*70)
     print("STORY WORD SENSE VISUALIZATION")
     print("="*70)
 
-    # Load model
+    # Load model - use bidirectional model for proper context
     print("\nLoading model...")
-    model_name = "gpt2"
+    # GPT-2 is causal (only sees left context) - bad for WSD!
+    # BERT/RoBERTa are bidirectional (sees both sides) - much better
+    model_name = "roberta-base"  # bidirectional, sees full context
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name)
 
