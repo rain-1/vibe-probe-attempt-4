@@ -62,6 +62,12 @@ def parse_args():
         help="Custom code to visualize (overrides --data)",
     )
     parser.add_argument(
+        "--file",
+        type=str,
+        default=None,
+        help="Path to a source file to visualize (overrides --data).",
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default="visualizations/code_probe_viz.html",
@@ -549,6 +555,27 @@ def main():
             "activations": activations,
             "ground_truth": {},
         })
+    elif args.file:
+        # Load code from a provided file path
+        file_path = Path(args.file)
+        if not file_path.exists():
+            print(f"ERROR: file not found: {file_path}")
+            return
+        code_text = file_path.read_text(encoding="utf-8")
+        input_ids = tokenizer.encode(code_text)
+        tokens = [tokenizer.decode([tid]) for tid in input_ids]
+
+        hidden_states = get_hidden_states(model, input_ids, layers, args.device)
+        activations = compute_activations(probes, hidden_states, args.device)
+
+        samples_data.append({
+            "idx": -1,
+            "language": file_path.suffix.lstrip('.') or "file",
+            "tokens": tokens,
+            "activations": activations,
+            "ground_truth": {},
+        })
+
     else:
         # Load samples from data file
         print(f"Loading samples from: {args.data}")

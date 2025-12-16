@@ -18,20 +18,28 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 class LinearProbe(nn.Module):
-    """Simple linear probe with optional GELU activation."""
-    
-    def __init__(self, input_dim: int, use_gelu: bool = False):
+    """Simple linear probe with optional GELU activation.
+
+    Supports multi-output probes (output_dim > 1). When computing activations
+    we will average multi-output probe probabilities into a single score per
+    token so the visualization remains scalar per token.
+    """
+
+    def __init__(self, input_dim: int, output_dim: int = 1, use_gelu: bool = False):
         super().__init__()
-        self.linear = nn.Linear(input_dim, 1)
+        self.linear = nn.Linear(input_dim, output_dim)
         self.use_gelu = use_gelu
         if use_gelu:
             self.gelu = nn.GELU()
-    
+
     def forward(self, x):
         x = self.linear(x)
         if self.use_gelu:
             x = self.gelu(x)
-        return x.squeeze(-1)
+        # Return shape (seq,) for single-output or (seq, out) for multi-output
+        if x.dim() == 2 and x.size(-1) == 1:
+            return x.squeeze(-1)
+        return x
 
 
 def parse_args():
@@ -56,6 +64,12 @@ def parse_args():
         type=str,
         default=None,
         help="Text to visualize (if not provided, generates new text)",
+    )
+    parser.add_argument(
+        "--text-file",
+        type=str,
+        default=None,
+        help="Path to a text file to visualize (alternative to --text)",
     )
     parser.add_argument(
         "--warm-tokens",
@@ -131,8 +145,17 @@ def load_probes(probe_paths: list[str], device: str) -> dict[int | str, nn.Modul
         layer = checkpoint["layer"]  # Can be int or 'final'
         input_dim = checkpoint["input_dim"]
         use_gelu = checkpoint.get("use_gelu", False)
-        
-        probe = LinearProbe(input_dim, use_gelu=use_gelu)
+        # Infer output dim from saved state_dict if available
+        state_dict = checkpoint.get("model_state_dict", {})
+        out_dim = 1
+        weight = state_dict.get("linear.weight")
+        if weight is not None:
+            try:
+                out_dim = weight.shape[0]
+            except Exception:
+                out_dim = 1
+
+        probe = LinearProbe(input_dim, output_dim=out_dim, use_gelu=use_gelu)
         probe.load_state_dict(checkpoint["model_state_dict"])
         probe = probe.to(device)
         probe.eval()
@@ -196,8 +219,12 @@ def compute_probe_activations(probes: dict[int | str, nn.Module], hidden_states:
         
         with torch.no_grad():
             # Apply probe to each token position
-            logits = probe(layer_hidden.float())  # (seq,)
-            probs = torch.sigmoid(logits)  # Convert to probability
+            logits = probe(layer_hidden.float())
+            probs = torch.sigmoid(logits)
+            # If probe produces multi-dimensional outputs (seq, out_dim),
+            # reduce to a single scalar per token by averaging across outputs.
+            if probs.dim() == 2:
+                probs = probs.mean(dim=-1)
             activations[layer] = probs.cpu().tolist()
     
     return activations
@@ -428,8 +455,15 @@ def main():
     # Load probes
     probes = load_probes(probe_paths, args.device)
     
-    # Get or generate text
-    if args.text:
+    # Get or generate text (text-file takes precedence)
+    if args.text_file:
+        text_path = Path(args.text_file)
+        if not text_path.exists():
+            print(f"ERROR: Text file not found: {text_path}")
+            return
+        text = text_path.read_text(encoding="utf-8")
+        print(f"Using text file: {text_path} ({len(text)} chars)")
+    elif args.text:
         text = args.text
         print(f"Using provided text: {text[:100]}...")
     else:
